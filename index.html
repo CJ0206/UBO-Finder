@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Analytics -->
+    <script>
+        // Define dataLayer and the gtag function.
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+
+        // Set default consent to 'denied' as a placeholder
+        // Determine actual values based on your own requirements
+        gtag('consent', 'default', {
+            'ad_storage': 'denied',
+            'ad_user_data': 'denied',
+            'ad_personalization': 'denied',
+            'analytics_storage': 'denied',
+            'wait_for_update': 500,
+        });
+
+        // Google tag (gtag.js)
+        (function() {
+            var script = document.createElement('script');
+            script.async = true;
+            script.src = "...";
+            document.head.appendChild(script);
+        })();
+
+        gtag('js', new Date());
+        gtag('config', '...');
+
+        document.addEventListener("DOMContentLoaded", function() {
+            function acceptCookies() {
+                var cookieBanner = document.getElementById("cookie-banner");
+                if (cookieBanner) {
+                    cookieBanner.style.display = "none";
+                } else {
+                    console.log("Cookie banner not found.");
+                }
+            }
+
+            function declineCookies() {
+                var cookieBanner = document.getElementById("cookie-banner");
+                if (cookieBanner) {
+                    cookieBanner.style.display = "none";
+                } else {
+                    console.log("Cookie banner not found.");
+                }
+            }
+
+            document.getElementById("acceptCookies").addEventListener("click", function(event) {
+                event.preventDefault();
+                allConsentGranted();
+                acceptCookies();
+            });
+
+            document.getElementById("declineCookies").addEventListener("click", function(event) {
+                event.preventDefault();
+                allConsentDeclined();
+                declineCookies();
+            });
+
+            function allConsentGranted() {
+                gtag('consent', 'update', {
+                    'ad_storage': 'granted',
+                    'ad_user_data': 'granted',
+                    'ad_personalization': 'granted',
+                    'analytics_storage': 'granted'
+                });
+                // Optionally set a cookie to remember the user's choice
+                document.cookie = "cookies_accepted=true; path=/; max-age=" + 60*60*24*365;
+            }
+
+            function allConsentDeclined() {
+                gtag('consent', 'update', {
+                    'ad_storage': 'denied',
+                    'ad_user_data': 'denied',
+                    'ad_personalization': 'denied',
+                    'analytics_storage': 'denied'
+                });
+                // Optionally set a cookie to remember the user's choice
+                document.cookie = "cookies_accepted=false; path=/; max-age=" + 60*60*24*365;
+            }
+
+            // Check if cookies are already accepted
+            if(document.cookie.indexOf('cookies_accepted=true') !== -1) {
+                // Update consent status immediately
+                allConsentGranted();
+                acceptCookies();
+            }
+
+            if(document.cookie.indexOf('cookies_accepted=false') !== -1) {
+                // Update consent status immediately
+                allConsentDeclined();
+                declineCookies();
+            }
+        });
+    </script>
+
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBO Finder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <h1>Ultimate Beneficial Owner Finder</h1>
+        <input type="text" id="companyNumber" placeholder="Enter Company Number">
+        <button onclick="searchCompany()">Search</button>
+        <button onclick="resetForm()">Reset</button>
+        <br>
+        <div id="companyNameDisplay"></div>
+        <br>
+        <div id="results">
+            <div id="intro">
+                <p>We harness the power of the UK Companies House API to reveal the Ultimate Beneficial Owner (UBO) and Persons of Significant Control (PSC) connected to any company registered with UK Companies House.</p>
+                <p>To get started, simply enter an 8-character company number in the input box above and click <i>Search</i>. Our robust recursive search explores parent companies until it identifies an individual, follows offshore connections, or determines that no UBO/PSC is available.</p>
+                <p>The results will display each active company's ownership structure, including controlling entities and individuals, their ownership percentages, and statuses (Active or Ceased).</p>
+                <p>If no PSC data is available, a link to the company's profile on Companies House will be provided.</p>
+                <p>You can export the retrieved data to a .csv or .pdf for future records, just click the relevant buttons once your results have loaded. Please note that cells are comma separated, so any names containing a comma on the page may result in an undesired output.</p>
+                <br>
+                <hr>
+                <br>
+                <p>Please note that if a missing company number is returned, the search will terminate and display the results obtained up to that point. You may need to check Companies House and rerun the search for the last entity found once you have obtained its complete UK company number.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025</p>
+        <p>Contact me via ....</p>
+        <p><a id="patchNotes" href="#" onclick="patchNotes();">V:1.2.1</a></p>
+        <br>
+        <br>
+        <a href='https://ko-fi.com/A0A7SV8LO' target='_blank' class='bottom-left'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi3.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+    </footer>
+
+    <!--- Google Analytic Consent --->
+    <div id="cookie-banner" class="cookie-banner">
+        <p>
+            We use cookies to analyse how you use our website.<br>Please accept our use of cookies so we can monitor and improve our services.
+        </p>
+        <br>
+        <button id="acceptCookies">Accept</button> <button id="declineCookies">Decline</button>
+    </div>
+    
+    <!-- Ensure that this script is loaded after the HTML elements -->
+    <script src="ubo.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js" defer>
+</body>
+</html>
