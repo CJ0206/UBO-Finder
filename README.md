@@ -37,6 +37,17 @@ When you have your converted key you will need to add it to your Nginx configura
     }
 ```
 
+You can test this is working by running the following (replacing `AAAaAAA0AaAaAAAaAA00A0A0AAa00aAaAAAaAaAaAAA0AAaaAa` with your converted API key, and `http://192.168.1.111:8083` with your Nginx address):
+
+```
+curl -H "Authorization: Basic AAAaAAA0AaAaAAAaAA00A0A0AAa00aAaAAAaAaAaAAA0AAaaAa==" "http://192.168.1.111:8083/companies-house-api/company/09601776/persons-with-significant-control"
+```
+
+You should see an output similar to the below:
+```
+{"items_per_page":25,"items":[{"etag":"dab20106b703c0a978b7ec2b08399177c032030c","notified_on":"2017-05-20","country_of_residence":"United Kingdom","date_of_birth":{"month":3,"year":1983},"name":"Mr Pragnesh Modhwadia","name_elements":{"title":"Mr","surname":"Modhwadia","forename":"Pragnesh"},"links":{"self":"/company/09601776/persons-with-significant-control/individual/ThVvY0C_rPpkADN2R1jmeMkWDVc"},"nationality":"British","ceased":false,"kind":"individual-person-with-significant-control","address":{"address_line_1":"248a Marylebone Road","locality":"London","postal_code":"NW1 6BB","premises":"5th Floor  Grove House"},"natures_of_control":["ownership-of-shares-75-to-100-percent","voting-rights-75-to-100-percent"]}],"start_index":0,"total_results":1,"active_count":1,"ceased_count":0,"links":{"self":"/company/09601776/persons-with-significant-control"}}
+```
+
 ## [index.html](index.html)
 
 Please ensure you update the `<!-- Footer -->` section with your contact details (you may also want to remove my ko-fi link, but if you leave it there it would also be appreciated).
