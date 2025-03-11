@@ -52,7 +52,7 @@ You should see an output similar to the below:
 
 Please ensure you update the `<!-- Footer -->` section with your contact details (you may also want to remove my ko-fi link, but if you leave it there it would also be appreciated).
 
-### If you use Google Analytics 
+### If you use Google Analytics:
 
 You will need to update the `script.src` with you tag URL (i.e. replaye `...`):
 ```
@@ -71,7 +71,8 @@ You will also need to update your gtag (i.e. replaye `...`):
         gtag('config', '...');
 ```
 
-### If you do not use Google Analytics
+### If you do not use Google Analytics:
+
 Remove the entire `<script>` section at the top of the code, and the `<!--- Google Analytic Consent --->` section at the bottom of the code.
 
 ## [ubo.js](ubo.js)
