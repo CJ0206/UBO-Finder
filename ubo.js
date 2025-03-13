@@ -203,7 +203,7 @@ async function findUltimateOwner(companyNumber, ownershipChain = [], resultsDiv)
 
         if (psc.ceased) {
             viewLink = "N/A - Ceased PSC.";
-        } else if (legalAuthority && !["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "england & wales", "england and wales", "uk", "england-wales"].includes(legalAuthority)) {
+        } else if (legalAuthority && !["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "united kingdom (england)", "united kingdom (wales)", "england & wales", "england and wales", "uk", "england-wales"].includes(legalAuthority)) {
             companyNumberDisplay = `${legalAuthority.toUpperCase()}: ${registrationNumber.toUpperCase()}`;
             console.log(`Non-UK entity detected: ${companyNumberDisplay}. Stopping recursion.`);
             legalAuthority = capitalizeWords(legalAuthority); // Capitalize each word in the legal authority
@@ -243,7 +243,7 @@ async function findUltimateOwner(companyNumber, ownershipChain = [], resultsDiv)
         `;
 
         // Recursively trace ownership for UK-based corporate entities
-        if (!psc.ceased && registrationNumber.length === 8 && psc.kind === "corporate-entity-person-with-significant-control" && ["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "england & wales", "england and wales", "uk", "england-wales"].includes(legalAuthority)) {
+        if (!psc.ceased && registrationNumber.length === 8 && psc.kind === "corporate-entity-person-with-significant-control" && ["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "united kingdom (england)", "united kingdom (wales)", "england & wales", "england and wales", "uk", "england-wales"].includes(legalAuthority)) {
             if (registrationNumber) {
                 console.log("Recursively tracing ownership for company:", registrationNumber);
                 await findUltimateOwner(registrationNumber, ownershipChain, resultsDiv);
@@ -482,7 +482,6 @@ function patchNotes() {
     if (results) results.innerHTML = "";
     if (companyNameDisplay) companyNameDisplay.innerHTML = "";
 
-    // Restore the introduction blurb
     if (results) {
         results.innerHTML = `
             <div id="intro">
@@ -580,6 +579,15 @@ function patchNotes() {
 								<li>Added page numbers to PDF.</li>
 								<li>Reformatted PDF.</li>
 								<li>Ensured functional links in PDF.</li>
+							</ul>
+						</td>
+					</tr>
+					<tr>
+                        <td>1.2.2</td>
+						<td> </td>
+                        <td>
+							<ul>
+								<li>Expand UK definition.</li>
 							</ul>
 						</td>
 					</tr>
