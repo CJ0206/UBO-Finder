@@ -202,7 +202,8 @@ async function findUltimateOwner(companyNumber, ownershipChain = [], resultsDiv)
         let status = psc.ceased ? "Ceased" : "Active";
 
         if (psc.ceased) {
-            viewLink = "N/A - Ceased PSC.";
+            let ceasedDate = psc.ceased_on ? psc.ceased_on.split("-").reverse().join("/") : "Unknown Date";
+            viewLink = `N/A - Ceased ${ceasedDate}`;
         } else if (legalAuthority && !["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "united kingdom (england)", "united kingdom (wales)", "england & wales", "england and wales", "uk", "england-wales"].includes(legalAuthority)) {
             companyNumberDisplay = `${legalAuthority.toUpperCase()}: ${registrationNumber.toUpperCase()}`;
             console.log(`Non-UK entity detected: ${companyNumberDisplay}. Stopping recursion.`);
@@ -588,6 +589,15 @@ function patchNotes() {
                         <td>
 							<ul>
 								<li>Expand UK definition.</li>
+							</ul>
+						</td>
+					</tr>
+					<tr>
+                        <td>1.2.3</td>
+						<td> </td>
+                        <td>
+							<ul>
+								<li>Ceased UBOs/PSCs provides the date their engagement was ceased where available.</li>
 							</ul>
 						</td>
 					</tr>
