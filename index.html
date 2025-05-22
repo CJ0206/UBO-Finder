@@ -7,93 +7,20 @@
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
 
-        // Set default consent to 'denied' as a placeholder
-        // Determine actual values based on your own requirements
-        gtag('consent', 'default', {
-            'ad_storage': 'denied',
-            'ad_user_data': 'denied',
-            'ad_personalization': 'denied',
-            'analytics_storage': 'denied',
-            'wait_for_update': 500,
-        });
+        // NOTE: gtag('consent', 'default', ...) has been moved to ubo.js
 
         // Google tag (gtag.js)
         (function() {
             var script = document.createElement('script');
             script.async = true;
-            script.src = "...";
+            script.src = "..."; // Replace with your actual GA script URL
             document.head.appendChild(script);
         })();
 
         gtag('js', new Date());
-        gtag('config', '...');
+        gtag('config', '...'); // Replace with your actual GA Config ID
 
-        document.addEventListener("DOMContentLoaded", function() {
-            function acceptCookies() {
-                var cookieBanner = document.getElementById("cookie-banner");
-                if (cookieBanner) {
-                    cookieBanner.style.display = "none";
-                } else {
-                    console.log("Cookie banner not found.");
-                }
-            }
-
-            function declineCookies() {
-                var cookieBanner = document.getElementById("cookie-banner");
-                if (cookieBanner) {
-                    cookieBanner.style.display = "none";
-                } else {
-                    console.log("Cookie banner not found.");
-                }
-            }
-
-            document.getElementById("acceptCookies").addEventListener("click", function(event) {
-                event.preventDefault();
-                allConsentGranted();
-                acceptCookies();
-            });
-
-            document.getElementById("declineCookies").addEventListener("click", function(event) {
-                event.preventDefault();
-                allConsentDeclined();
-                declineCookies();
-            });
-
-            function allConsentGranted() {
-                gtag('consent', 'update', {
-                    'ad_storage': 'granted',
-                    'ad_user_data': 'granted',
-                    'ad_personalization': 'granted',
-                    'analytics_storage': 'granted'
-                });
-                // Optionally set a cookie to remember the user's choice
-                document.cookie = "cookies_accepted=true; path=/; max-age=" + 60*60*24*365;
-            }
-
-            function allConsentDeclined() {
-                gtag('consent', 'update', {
-                    'ad_storage': 'denied',
-                    'ad_user_data': 'denied',
-                    'ad_personalization': 'denied',
-                    'analytics_storage': 'denied'
-                });
-                // Optionally set a cookie to remember the user's choice
-                document.cookie = "cookies_accepted=false; path=/; max-age=" + 60*60*24*365;
-            }
-
-            // Check if cookies are already accepted
-            if(document.cookie.indexOf('cookies_accepted=true') !== -1) {
-                // Update consent status immediately
-                allConsentGranted();
-                acceptCookies();
-            }
-
-            if(document.cookie.indexOf('cookies_accepted=false') !== -1) {
-                // Update consent status immediately
-                allConsentDeclined();
-                declineCookies();
-            }
-        });
+        // NOTE: The DOMContentLoaded listener and cookie functions have been moved to ubo.js
     </script>
 
     
@@ -107,8 +34,8 @@
     <div class="container">
         <h1>Ultimate Beneficial Owner Finder</h1>
         <input type="text" id="companyNumber" placeholder="Enter Company Number">
-        <button onclick="searchCompany()">Search</button>
-        <button onclick="resetForm()">Reset</button>
+        <button id="searchButton">Search</button>
+        <button id="resetButton">Reset</button>
         <br>
         <div id="companyNameDisplay"></div>
         <br>
@@ -132,7 +59,7 @@
     <footer>
         <p>&copy; 2025</p>
         <p>Contact me via ....</p>
-        <p><a id="patchNotes" href="#" onclick="patchNotes();">V:1.2.4</a></p>
+        <p><a id="patchNotes" href="#">V:1.2.4</a></p>
         <br>
         <br>
         <a href='https://ko-fi.com/A0A7SV8LO' target='_blank' class='bottom-left'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi3.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
@@ -150,6 +77,6 @@
     <!-- Ensure that this script is loaded after the HTML elements -->
     <script src="ubo.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js" defer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js" defer></script>
 </body>
 </html>
