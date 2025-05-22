@@ -265,7 +265,6 @@
                 viewLink = INVALID_CH_NUMBER_VIEW_LINK;
             }
 
-
             if (psc.kind === "individual-person-with-significant-control") {
                 if (psc.ceased) {
                     let ceasedDate = psc.ceased_on ? psc.ceased_on.split("-").reverse().join("/") : "Unknown Date";
@@ -697,6 +696,15 @@
                             <td>
                                 <ul>
                                     <li>Ceased UBOs/PSCs provides the date their engagement was ceased for individuals and non-UK entities where available.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>1.2.5</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Code cleanup.</li>
                                 </ul>
                             </td>
                         </tr>
