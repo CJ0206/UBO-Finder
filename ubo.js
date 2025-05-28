@@ -325,135 +325,226 @@
 
     // Function to export results to .pdf
     async function exportToPDF() {
-        const {
-            jsPDF
-        } = window.jspdf;
+        const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
 
-        // Retrieve the first company name and number
-        const firstCompanyHeader = document.querySelector("h3");
-        const firstCompanyText = firstCompanyHeader ? firstCompanyHeader.textContent.replace("Ownership for Company: ", "") : "";
-        const firstCompanyName = firstCompanyText.split(" - ")[0];
-        const firstCompanyNumber = document.getElementById("companyNumber").value.toUpperCase();
-
-        // Get the current date in YYYYMMDD format
-        const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
-
-        const margin = 10;
-        const pageWidth = doc.internal.pageSize.width;
-        const maxWidth = pageWidth - 5 * margin;
-
-        // Set the title with the first company name and number, and wrap the text
-        const titleText = `Company Ownership Data: ${firstCompanyName} (${firstCompanyNumber})`;
-        const wrappedTitle = doc.splitTextToSize(titleText, maxWidth);
-        doc.setFontSize(18);
-        wrappedTitle.forEach((line, index) => {
-            doc.text(line, margin, 20 + (index * 10));
-        });
-
-        let startY = 20 + (wrappedTitle.length * 10); // Adjust startY based on title height
-
-        const tableData = [];
-        document.querySelectorAll("h3, table tr").forEach((row, rowIndex) => {
-            if (row.tagName === "H3") {
-                // Add company ownership header
-                if (rowIndex !== 0) { // Add a space between different company sections
-                    tableData.push([{
-                        content: "",
-                        colSpan: 5,
-                        styles: {
-                            fillColor: [255, 255, 255]
-                        }
-                    }]);
-                }
-                const companyName = row.textContent;
-                tableData.push([{
-                    content: companyName,
-                    colSpan: 5,
-                    styles: {
-                        fillColor: [220, 220, 220],
-                        fontStyle: 'bold',
-                        halign: 'center',
-                        valign: 'middle'
-                    }
-                }]);
-            } else {
-                // Add table rows
-                let rowData = Array.from(row.querySelectorAll("td, th")).map((cell, colIndex) => {
-                    if (colIndex === 4) {
-                        const linkElement = cell.querySelector("a");
-                        const linkText = cell.textContent.trim();
-                        const link = linkElement ? linkElement.getAttribute("href") : '';
-                        return link ? {
-                            content: linkText,
-                            link: link
-                        } : {
-                            content: linkText
-                        };
-                    } else {
-                        return {
-                            content: cell.textContent.trim()
-                        };
-                    }
-                });
-                tableData.push(rowData);
-            }
-        });
-
-        // Add the table using autoTable plugin
-        doc.autoTable({
-            startY: startY,
-            head: [
-                ['Company Owner', 'Company Number', 'Ownership Percentage', 'Status', 'See on Companies House']
-            ],
-            body: tableData,
-            theme: 'grid',
-            headStyles: {
-                fillColor: [0, 188, 212],
-                halign: 'center'
+        // --- Configuration Object ---
+        const pdfConfig = {
+            margin: 10,
+            pageWidth: doc.internal.pageSize.width,
+            get maxWidth() { return this.pageWidth - 2 * this.margin; }, // Dynamic property for max width
+            title: {
+                fontSize: 18,
+                lineHeight: 10,
+                startY: 20,
+                spaceAfter: 0
             },
-            styles: {
+            table: {
+                headFillColor: [0, 188, 212],
+                headAlign: 'center',
                 fontSize: 10,
                 cellPadding: 3,
-                overflow: 'linebreak', // Ensure text wraps within cells
-                halign: 'center', // Horizontal alignment for cells
-                valign: 'middle' // Vertical alignment for cells
+                overflow: 'linebreak',
+                cellAlign: 'center',
+                cellVAlign: 'middle',
+                spacerRowHeight: 5,
+                companySectionFillColor: [220, 220, 220],
+                marginBottom: 30 // To prevent overlap with footer
             },
-            didParseCell: function(data) {
-                if (data.cell.raw.link) {
-                    data.cell.text = ''; // Clear the default text to avoid duplication
-                }
+            footer: {
+                fontSize: 10,
+                text: "Searched using CJs Pi - UBO Finder",
+                yPosition: doc.internal.pageSize.height - 10,
+                dateTimeWidth: 60 // Estimated width for date/time string for right alignment
             },
-            didDrawCell: function(data) {
-                if (data.column.index === 4 && data.cell.section === 'body' && data.cell.raw.link) {
-                    doc.setTextColor(0, 0, 255);
-                    doc.textWithLink(data.cell.raw.content, data.cell.x + data.cell.padding('horizontal'), data.cell.y + data.cell.height / 2 + 3, {
-                        url: data.cell.raw.link
+            colors: {
+                linkColor: [0, 102, 204],
+                defaultText: [0, 0, 0],
+                spacerFill: [255, 255, 255]
+            },
+            columns: ['Company Owner', 'Company Number', 'Ownership Percentage', 'Status', 'See on Companies House']
+        };
+
+        // --- Helper Functions ---
+
+        /**
+         * Adds the main title to the PDF document.
+         * @param {jsPDF} docInstance - The jsPDF instance.
+         * @param {string} titleText - The text for the title.
+         * @param {object} config - The relevant title configuration.
+         * @param {number}- The calculated start Y position for the next element.
+         */
+        function addTitle(docInstance, titleText, config) {
+            docInstance.setFontSize(config.fontSize);
+            const wrappedTitle = docInstance.splitTextToSize(titleText, pdfConfig.maxWidth);
+            wrappedTitle.forEach((line, index) => {
+                docInstance.text(line, pdfConfig.margin, config.startY + (index * config.lineHeight));
+            });
+            return config.startY + (wrappedTitle.length * config.lineHeight) + config.spaceAfter;
+        }
+
+        /**
+         * Prepares the data for the main table by extracting it from the DOM.
+         * @returns {Array} - An array of rows for the autoTable body.
+         */
+        function prepareTableData() {
+            const tableRows = [];
+            // Iterate through each company section (h3) and its corresponding table
+            document.querySelectorAll("h3, table tr").forEach((row, rowIndex) => {
+                if (row.tagName === "H3") {
+                    // Add a spacer row if this is not the first company section
+                    if (rowIndex !== 0) {
+                        tableRows.push([{
+                            content: '',
+                            colSpan: pdfConfig.columns.length,
+                            styles: { 
+                                fillColor: [150, 150, 150], // Medium gray
+                                minCellHeight: 1, 
+                                cellPadding: 0 
+                            }
+                        }]);
+                    }
+                    // Add the company name as a styled header row
+                    tableRows.push([{
+                        content: row.textContent,
+                        colSpan: pdfConfig.columns.length,
+                        styles: {
+                            fillColor: pdfConfig.table.companySectionFillColor,
+                            fontStyle: 'bold',
+                            halign: 'center',
+                            valign: 'middle'
+                        }
+                    }]);
+                } else { // This is a <tr> element
+                    // Extract cell data (td or th)
+                    const rowData = Array.from(row.querySelectorAll("td, th")).map((cell, colIndex) => {
+                        // Special handling for the "See on Companies House" column for links
+                        if (colIndex === 4) {
+                            const linkElement = cell.querySelector("a");
+                            const linkText = cell.textContent.trim();
+                            const href = linkElement ? linkElement.getAttribute("href") : '';
+                            return href ? { content: linkText, link: href } : { content: linkText };
+                        }
+                        return { content: cell.textContent.trim() };
                     });
-                    doc.setTextColor(0, 0, 0);
+                    if (rowData.length > 0) { // Ensure it's not an empty tr or just th row if already handled
+                        tableRows.push(rowData);
+                    }
                 }
-            },
-            didDrawPage: function(data) {
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageNumber = data.pageNumber;
+            });
+            return tableRows;
+        }
+        
+        /**
+         * Draws the main table in the PDF.
+         * @param {jsPDF} docInstance - The jsPDF instance.
+         * @param {number} startY - The Y position to start drawing the table.
+         * @param {Array} tableBodyData - The data for the table body.
+         * @param {object} config - The PDF configuration object.
+         */
+        function drawTable(docInstance, startY, tableBodyData, config) {
+            docInstance.autoTable({
+                startY: startY,
+                head: [config.columns],
+                body: tableBodyData,
+                theme: 'grid',
+                showHead: 'never',
+                headStyles: {
+                    fillColor: config.table.headFillColor,
+                    halign: config.table.headAlign
+                },
+                styles: {
+                    fontSize: config.table.fontSize,
+                    cellPadding: config.table.cellPadding,
+                    overflow: config.table.overflow,
+                    halign: config.table.cellAlign,
+                    valign: config.table.cellVAlign
+                },
+                margin: { bottom: config.table.marginBottom, left: config.margin, right: config.margin },
+                didParseCell: function(data) {
+                    // Remove default text rendering if a link is present
+                    if (data.cell.raw.link) {
+                        data.cell.text = ''; 
+                    }
+                },
+                didDrawCell: function(data) {
+                    // Manually draw text with link for the "See on Companies House" column
+                    if (data.column.index === 4 && data.cell.section === 'body' && data.cell.raw.link) {
+                        docInstance.setTextColor(...config.colors.linkColor);
+                        
+                        const text = data.cell.raw.content;
+                        const textWidth = docInstance.getTextWidth(text);
+                        
+                        // Calculate X for horizontal centering
+                        const newX = data.cell.x + (data.cell.width - textWidth) / 2;
+                        
+                        // Calculate Y for vertical centering
+                        // The base of the text will be at this Y.
+                        // Adjusted the offset from (fontSize / 2.5) to (fontSize * 0.33)
+                        const newY = data.cell.y + data.cell.height / 2 + (data.cell.styles.fontSize * 0.33); 
 
-                // Add custom footer with current date and time in 24-hour format
-                const footerText = "Searched using CJs Pi - UBO Finder";
-                const date = new Date();
-                const formattedDate = date.toLocaleString("en-GB", {
-                    hour12: false
-                });
+                        docInstance.textWithLink(
+                            text,
+                            newX,
+                            newY,
+                            { url: data.cell.raw.link }
+                        );
+                        docInstance.setTextColor(...config.colors.defaultText);
+                    }
+                },
+                didDrawPage: function(data) {
+                    // Add footer to each page using docInstance.internal.getNumberOfPages() for total pages.
+                    addFooter(docInstance, data.pageNumber, docInstance.internal.getNumberOfPages(), config);
+                }
+            });
+        }
 
-                doc.setFontSize(10);
-                doc.text(footerText, margin, doc.internal.pageSize.height - 10); // Left-aligned footer text
-                doc.text(formattedDate, doc.internal.pageSize.width - 60, doc.internal.pageSize.height - 10); // Right-aligned date and time
-                doc.text(`${pageNumber} / ${totalPages}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, {
-                    align: 'center'
-                }); // Centered page number
-            }
-        });
+        /**
+         * Adds the footer to each page of the PDF.
+         * @param {jsPDF} docInstance - The jsPDF instance.
+         * @param {number} pageNumber - The current page number.
+         * @param {number} totalPages - The total number of pages.
+         * @param {object} config - The PDF configuration object.
+         */
+        function addFooter(docInstance, pageNumber, totalPages, config) { // totalPages param is no longer directly used from here due to placeholder
+            docInstance.setFontSize(config.footer.fontSize);
 
-        // Save the PDF file with the desired filename format
+            // Left-aligned footer text
+            docInstance.text(config.footer.text, config.margin, config.footer.yPosition);
+
+            // Right-aligned date and time
+            const date = new Date();
+            const formattedDate = date.toLocaleString("en-GB", { hour12: false });
+            // Align to the right margin
+            docInstance.text(formattedDate, config.pageWidth - config.margin, config.footer.yPosition, { align: 'right' });
+            
+            // Centered page number with placeholder for total pages
+            docInstance.text(`${pageNumber} / {totalPages}`, config.pageWidth / 2, config.footer.yPosition, { align: 'center' });
+        }
+
+        // --- Main PDF Generation Flow ---
+
+        // Retrieve initial company details for title and filename
+        const firstCompanyHeader = document.querySelector("h3");
+        const firstCompanyText = firstCompanyHeader ? firstCompanyHeader.textContent.replace(OWNERSHIP_HEADER_PREFIX, "") : "";
+        const firstCompanyName = firstCompanyText.split(" - ")[0] || "CompanyData";
+        const firstCompanyNumber = document.getElementById("companyNumber").value.toUpperCase();
+        const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+
+        // 1. Add Title
+        const titleText = `Company Ownership Data: ${firstCompanyName} (${firstCompanyNumber})`;
+        let currentY = addTitle(doc, titleText, pdfConfig.title);
+
+        // 2. Prepare Table Data
+        const tableBody = prepareTableData();
+        
+        // 3. Draw Table (footer is drawn via didDrawPage callback in drawTable)
+        drawTable(doc, currentY, tableBody, pdfConfig);
+
+        // 4. Replace placeholder for total pages
+        doc.putTotalPages('{totalPages}');
+
+        // 5. Save PDF
         const filename = `Company Ownership Data - ${firstCompanyName} ${firstCompanyNumber} - ${currentDate}.pdf`;
         doc.save(filename);
     }
@@ -705,6 +796,15 @@
                             <td>
                                 <ul>
                                     <li>Code cleanup.</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>1.2.6</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Updated styling and PDF generation.</li>
                                 </ul>
                             </td>
                         </tr>
