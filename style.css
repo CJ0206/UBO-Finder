@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
 /* General reset for body */
 * {
     margin: 0;
@@ -7,17 +9,27 @@
 
 /* Body Styling */
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #121212;
-    color: #E0E0E0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #1A1D24;
+    color: #F0F0F0;
+    padding: 2em;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* Container Styling */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
 }
 
 /* Header Styling */
 h1 {
     font-size: 36px;
+    font-weight: 300;
     color: #FFFFFF;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     text-align: center;
     text-transform: uppercase;
 }
@@ -31,73 +43,92 @@ h1 {
 
 /* Search Input */
 #companyNumber {
+    font-family: 'Roboto', sans-serif;
     padding: 10px;
     font-size: 16px;
-    border: 1px solid #444;
-    background-color: #333;
-    color: #E0E0E0;
-    border-radius: 5px;
+    border: 1px solid #353A47;
+    background-color: #2A2E37;
+    color: #F0F0F0;
+    border-radius: 8px;
     width: 250px;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 #companyNumber:focus {
     outline: none;
-    border-color: #00BCD4;
+    border-color: #00C2D1;
 }
 
 /* Button Style */
 button {
-    background-color: #00BCD4;
-    color: #121212;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    background-color: #00C2D1;
+    color: #1A1D24;
     font-size: 16px;
     padding: 10px 15px;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     margin-left: 10px;
-    transition: background-color 0.3s ease, transform 0.2s;
+    transition: background-color 0.3s ease, transform 0.2s, box-shadow 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 button:hover {
-    background-color: #0097A7;
+    background-color: #00A8B5;
     transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
 }
 
 button:active {
-    background-color: #00BCD4;
+    background-color: #00C2D1;
     transform: translateY(0);
+    box-shadow: none;
+}
+
+button:focus {
+    outline: 2px solid #00C2D1;
+    outline-offset: 2px;
 }
 
 /* Company name display */
 #companyNameDisplay p {
     font-size: 18px;
     margin-top: 20px;
-    color: #00BCD4;
+    color: #00C2D1;
     text-align: center;
 }
 
 /* Results Section */
 #results {
     margin-top: 20px;
-    background-color: #1F1F1F;
+    background-color: #22262E;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 #results p {
-    color: #E0E0E0;
-    margin-bottom: 10px;
+    color: #F0F0F0;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+/* HR Styling */
+hr {
+    margin: 30px 0;
+    border: 0;
+    border-top: 1px solid #353A47; 
 }
 
 /* Table Styling */
 table {
     width: 100%;
     margin-top: 20px;
-    border-collapse: collapse;
-    background-color: #333;
-    color: #FFFFFF;  /* All text is white */
+    border-spacing: 0;
+    background-color: #2A2E37;
+    color: #FFFFFF;
     border-radius: 10px;
     overflow: hidden;
 }
@@ -105,13 +136,18 @@ table {
 table th, table td {
     padding: 10px;
     text-align: left;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid #353A47;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1em;
+    line-height: 1.5;
 }
 
 table th {
-    background-color: #444;
-    color: #FFFFFF;  /* Make table headings white */
+    background-color: #353A47;
+    color: #FFFFFF;
     text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 table tr {
@@ -119,35 +155,48 @@ table tr {
 }
 
 table tr:hover {
-    background-color: #444;
+    background-color: #383D4A;
 }
 
 table td a {
-    color: #B0B0B0;  /* Links are slightly grey/off white */
+    color: #90E0EF;
     text-decoration: none;
     transition: color 0.3s;
 }
 
 table td a:hover {
-    color: #9E9E9E;  /* Darker grey on hover */
+    color: #70C0D0;
     text-decoration: underline;
+}
+
+a:focus { /* General focus style for all links */
+    outline: 2px solid #00C2D1;
+    outline-offset: 2px;
+    background-color: rgba(0, 194, 209, 0.1);
 }
 
 /* Styling all links within the #results section */
 #results a {
-    color: #B0B0B0; /* Slightly grey/off white */
+    color: #90E0EF;
     text-decoration: none;
-    transition: color 0.3s;
+    transition: color 0.3s, background-color 0.3s;
 }
 
 #results a:hover {
-    color: #9E9E9E; /* Darker grey on hover */
+    color: #70C0D0;
     text-decoration: underline;
+}
+
+/* Ensure footer links also get focus styling */
+footer a:focus {
+    outline: 2px solid #00C2D1;
+    outline-offset: 2px;
+    background-color: rgba(0, 194, 209, 0.1);
 }
 
 /* Error and message styling */
 .error-message, .error-message a {
-    color: #FF4081;
+    color: #FF5080;
 }
 
 .error-message a {
@@ -155,7 +204,7 @@ table td a:hover {
 }
 
 .success-message {
-    color: #03DAC6;
+    color: #03E0C0;
 }
 
 .bottom-left {
@@ -163,13 +212,13 @@ table td a:hover {
     bottom: 0;
     left: 0;
     margin: 10px;
-    z-index: 1000; /* Ensure it's on top of other elements */
-    opacity: 0.5; /* Set initial transparency */
-    transition: opacity 0.3s; /* Add a smooth transition */
+    z-index: 1000;
+    opacity: 0.5;
+    transition: opacity 0.3s;
 }
 
 .bottom-left:hover {
-    opacity: 1; /* Full opacity when hovered over */
+    opacity: 1;
 }
 
 #buttonContainer {
@@ -185,48 +234,82 @@ table td a:hover {
 	position:fixed;
 	bottom:0;
 	width:100%;
-	background-color:#333;
-	color:#fff;
+	background-color:#1F2228;
+	color:#F0F0F0;
 	padding:10px;
 	text-align:center;
 }
 
 .cookie-banner {
-    opacity: 0.5; /* Set initial transparency */
-    transition: opacity 0.3s; /* Add a smooth transition */
+    opacity: 0.5;
+    transition: opacity 0.3s;
 }
 
 .cookie-banner:hover {
-    opacity: 1; /* Full opacity when hovered over */
+    opacity: 1;
 }
 
 footer {
     margin-top: 30px;
     text-align: center;
-    color: #FFFFFF;
+    color: #F0F0F0;
     font-size: 14px;
+    font-weight: 400;
 }
 
 footer a {
-    color: #B0B0B0;  /* Links are slightly grey/off white */
+    color: #90E0EF;
     text-decoration: none;
-    transition: color 0.3s;
+    transition: color 0.3s, background-color 0.3s;
 }
 
 footer a:hover {
-    color: #9E9E9E;  /* Darker grey on hover */
+    color: #70C0D0;
 	text-decoration: underline;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    #companyNumber {
-        width: 200px;
+    .container {
+        padding: 15px;
     }
 
-    button {
-        padding: 8px 12px;
+    #companyNumberContainer {
+        flex-direction: column;
+        align-items: center;
     }
+
+    #companyNumberContainer input#companyNumber {
+        width: 90%;
+        max-width: 350px;
+        margin-left: 0;
+        margin-bottom: 10px;
+    }
+    
+    #companyNumberContainer button {
+        width: 90%;
+        max-width: 350px;
+        margin-left: 0;
+        margin-bottom: 10px;
+        font-size: 15px;
+        padding: 12px 15px;
+    }
+
+    #companyNumberContainer button:last-child {
+        margin-bottom: 0;
+    }
+
+    /* General button padding and font size for other buttons not in #companyNumberContainer */
+    button { 
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    /* Ensure #companyNumberContainer buttons override general button if more specific styling is needed */
+    #companyNumberContainer button {
+        padding: 12px 15px;
+        font-size: 15px;
+    }
+
 
     table th, table td {
         font-size: 14px;
