@@ -54,7 +54,7 @@ Please ensure you update the `<!-- Footer -->` section with your contact details
 
 ### If you use Google Analytics:
 
-You will need to update the `script.src` with you tag URL (i.e. replaye `...`):
+You will need to update the `script.src` with you tag URL (i.e. `...`):
 ```
 // Google tag (gtag.js)
         (function() {
@@ -65,7 +65,7 @@ You will need to update the `script.src` with you tag URL (i.e. replaye `...`):
         })();
 ```
 
-You will also need to update your gtag (i.e. replaye `...`):
+You will also need to update your gtag (i.e.  `...`):
 ```
         gtag('js', new Date());
         gtag('config', '...');
@@ -76,9 +76,13 @@ To disable Google Analytics:
 1.  **In `index.html`:**
     *   Remove the Google Analytics script block from the `<head>` section. This block starts with `<!-- Google Analytics -->` and includes the `gtag.js` loading and `gtag('config', '...');` calls.
     *   Remove the cookie consent banner HTML from the end of the `<body>`. This is the `div` with `id="cookie-banner"`: `<!--- Google Analytic Consent ---> <div id="cookie-banner" ...>...</div>`.
+    *   Remove the cookie info link `<a id="showCookieInfo" href="#">Cookie Info</a></p>`.
 2.  **In `ubo.js` (Optional but Recommended for full removal):**
     *   At the beginning of the IIFE in `ubo.js`, you will find a line: `gtag('consent', 'default', { ... });`. You can remove this line.
-    *   Further down in `ubo.js`, within the `DOMContentLoaded` event listener, there are functions `allConsentGranted()` and `allConsentDeclined()` and logic that calls `gtag('consent', 'update', ...)` and handles `document.cookie.indexOf('cookies_accepted=true/false')`. While the cookie banner itself will be gone from HTML, to fully remove GA tracking calls, these JavaScript parts related to `gtag` could also be commented out or removed if you are comfortable editing JavaScript. However, simply removing the elements from `index.html` will prevent the banner from showing and the main GA script from loading.
+    *   Further down in `ubo.js`, remove the section `// Function to show cookie information`
+    *   Remove the function `resetCookiePreferences()`
+    *   Within the `DOMContentLoaded` event listener, there are functions `allConsentGranted()` and `allConsentDeclined()` and logic that calls `gtag('consent', 'update', ...)` and handles `document.cookie.indexOf('cookies_accepted=true/false')`. While the cookie banner itself will be gone from HTML, to fully remove GA tracking calls, these JavaScript parts related to `gtag` could also be commented out or removed if you are comfortable editing JavaScript. However, simply removing the elements from `index.html` will prevent the banner from showing and the main GA script from loading.
+
 
 ## [ubo.js](ubo.js)
 
