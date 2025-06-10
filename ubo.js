@@ -16,7 +16,7 @@
     const UK_JURISDICTIONS = ["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "united kingdom (england)", "united kingdom (wales)", "england & wales", "england and wales", "uk", "england-wales"];
     const MSG_LOADING = "<p>Loading...</p>";
     const MSG_COMPANY_NOT_FOUND_INITIAL = "<p>Error: Company not found.</p><p>Please check the company number.</p>";
-    const MSG_INVALID_COMPANY_NUMBER_FORMAT = "<p>Invalid Company Number format. Please enter a 6 to 8-character alphanumeric company number.</p>"; // Updated message
+    const MSG_INVALID_COMPANY_NUMBER_FORMAT = "<p>Invalid Company Number format. Please enter a 6 to 8-character alphanumeric company number.</p>";
     const OWNERSHIP_HEADER_PREFIX = "Ownership for Company: ";
     const STATUS_CEASED = "Ceased";
     const STATUS_ACTIVE = "Active";
@@ -34,10 +34,7 @@
 
     // Fetch basic company data (including name) for a company
     async function getCompanyInfo(companyNumber) {
-        companyNumber = formatCompanyNumber(companyNumber); // Format early
-        // Capitalize the company number - already handled by formatCompanyNumber
-        // companyNumber = companyNumber.toUpperCase(); 
-
+        companyNumber = formatCompanyNumber(companyNumber);
         const url = `${BASE_URL}/company/${companyNumber}`;
 
         try {
@@ -62,10 +59,7 @@
 
     // Fetch Persons with Significant Control (PSC) data for a company
     async function getPSC(companyNumber) {
-        companyNumber = formatCompanyNumber(companyNumber); // Format early
-        // Capitalize the company number - already handled by formatCompanyNumber
-        // companyNumber = companyNumber.toUpperCase();
-
+        companyNumber = formatCompanyNumber(companyNumber);
         const url = `${BASE_URL}/company/${companyNumber}/persons-with-significant-control`;
 
         try {
@@ -147,7 +141,6 @@
         
         // Format the company number using formatCompanyNumber immediately after validation
         let companyNumber = formatCompanyNumber(cleanedCompanyNumberInput);
-        // companyNumberInput.toUpperCase() and old padding logic are removed as formatCompanyNumber handles these.
 
         // Validate the company number input (Post-formatting) - formatCompanyNumber should always return a valid string
         if (!companyNumber) { // This check is more of a safeguard.
@@ -201,7 +194,6 @@
             companyInfo = await getCompanyInfo(currentFormattedCompanyNumber);
             if (!companyInfo) { 
                 // Simplified error handling: if no companyInfo, assume fetch error or not found.
-                // More specific error handling (404, 429) should ideally be propagated by getCompanyInfo/getPSC if possible.
                 resultsDiv.innerHTML = MSG_ERROR_FETCH; 
                 return;
             }
@@ -246,7 +238,7 @@
             let rawRegistrationNumber = psc.identification?.registration_number || '';
             // Formatting for display or further processing of PSC registration numbers
             let registrationNumber = rawRegistrationNumber ? formatCompanyNumber(rawRegistrationNumber.toString()) : ''; 
-            let companyNumberDisplay = registrationNumber ? registrationNumber : 'N/A'; // Already uppercase from formatCompanyNumber
+            let companyNumberDisplay = registrationNumber ? registrationNumber : 'N/A';
 
             let viewLink = `<a href="https://find-and-update.company-information.service.gov.uk/company/${registrationNumber}/persons-with-significant-control" target="_blank">View on CH</a>`;
             let status = psc.ceased ? STATUS_CEASED : STATUS_ACTIVE;
@@ -264,6 +256,7 @@
             } else if (registrationNumber.length !== 8 && UK_JURISDICTIONS.includes(legalAuthority)) { // Only consider invalid if it's a UK entity
                 viewLink = INVALID_CH_NUMBER_VIEW_LINK;
             }
+
 
             if (psc.kind === "individual-person-with-significant-control") {
                 if (psc.ceased) {
@@ -545,7 +538,7 @@
         doc.putTotalPages('{totalPages}');
 
         // 5. Save PDF
-        const filename = `Company Ownership Data - ${firstCompanyName} ${firstCompanyNumber} - ${currentDate}.pdf`;
+        const filename = `Company Ownership Data - ${firstCompanyName} - ${firstCompanyNumber} - ${currentDate}.pdf`;
         doc.save(filename);
     }
 
@@ -624,9 +617,7 @@
                 <p>The results will display each active company's ownership structure, including controlling entities and individuals, their ownership percentages, and statuses (Active or Ceased).</p>
                 <p>If no PSC data is available, a link to the company's profile on Companies House will be provided.</p>
                 <p>You can export the retrieved data to a .csv or .pdf for future records, just click the relevant buttons once your results have loaded. Please note that cells are comma separated, so any names containing a comma on the page may result in an undesired output.</p>
-                <br>
                 <hr>
-                <br>
                 <p>Please note that if a missing company number is returned, the search will terminate and display the results obtained up to that point. You may need to check Companies House and rerun the search for the last entity found once you have obtained its complete UK company number.</p>
             </div>
         `;
@@ -651,7 +642,7 @@
         }
     }
     
-    // Function to read patch notes
+ // Function to read patch notes
     function patchNotes() {
         console.clear(); // Clear the console
         // Check if the elements exist before modifying them
@@ -808,13 +799,108 @@
                                 </ul>
                             </td>
                         </tr>
+						<tr>
+                            <td>1.2.7</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Added cookie info page.</li>
+									<li>Added cookie preference reset link.</li>
+                                </ul>
+                            </td>
+                        </tr>
                     </table>
                 </div>
             `;
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
+    // Function to show cookie information
+    function showCookieInfo() {
+        console.clear();
+        const resultsDiv = document.getElementById("results");
+        const companyNameDisplay = document.getElementById("companyNameDisplay");
+
+        // Clear any existing search results or company name information
+        if(resultsDiv) resultsDiv.innerHTML = "";
+        if(companyNameDisplay) companyNameDisplay.innerHTML = "";
+
+        // Create the HTML content for cookie information
+        const cookieInfoHTML = `
+            <div id="intro">
+                <p>This page details the cookies used on our website:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cookie Name</th>
+                            <th>Purpose</th>
+                            <th>More information</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>cfz_google-analytics_v4</code></td>
+                            <td>This cookie is essential for our site to enable Google Analytics 4 (GA4) tracking via Cloudflare Zaraz, a server-side tool that manages third-party scripts. It stores various engagement metrics and session data, including:<ul><li>Engagement Duration: The total time a user has interacted with the site.</li><li>Engagement Start Time: The timestamp when the user's engagement began.</li><li>Counter Values: General counters tracking user interactions.</li><li>Session Counter: The number of sessions initiated by the user.</li><li>GA4 Client ID: A unique identifier for the user in GA4.</li><li>Last Engagement Time: The timestamp of the last recorded user engagement.</li><li>GA4 Session ID: A unique identifier for the current session in GA4.</li></ul>These data points help us understand user behavior, optimize website performance, and enhance user experience by providing insights into how users interact with our site.<br>Duration: The cfz_google-analytics_v4 cookie typically persists for 30 minutes to 1 day.</td>
+                            <td><a href="https://developers.cloudflare.com/zaraz/advanced/google-consent-mode/" target="_blank">Cloudflare Zaraz & GA4</a></td>
+                        </tr>
+                        <tr>
+                            <td><code>cfzs_google-analytics_v4</code></td>
+                            <td>This cookie is essential for our site to enable Google Analytics 4 (GA4) tracking via Cloudflare Zaraz, a server-side tool that manages third-party scripts. It stores various engagement metrics and session data, including:<ul><li>Engagement Duration: The total time a user has interacted with the site.</li><li>Engagement Start Time: The timestamp when the user's engagement began.</li><li>Counter Values: General counters tracking user interactions.</li><li>Session Counter: The number of sessions initiated by the user.</li><li>GA4 Client ID: A unique identifier for the user in GA4.</li><li>Last Engagement Time: The timestamp of the last recorded user engagement.</li><li>GA4 Session ID: A unique identifier for the current session in GA4.</li></ul>These data points help us understand user behavior, optimize website performance, and enhance user experience by providing insights into how users interact with our site.<br>Duration: The cfzs_google-analytics_v4 cookie typically persists for 30 minutes to 1 day.</td>
+                            <td><a href="https://developers.cloudflare.com/zaraz/advanced/google-consent-mode/" target="_blank">Cloudflare Zaraz & GA4</a></td>
+                        </tr>
+                        <tr>
+                            <td><code>_ga</code></td>
+                            <td>The _ga cookie is set by Google Analytics and is used to distinguish unique users by assigning a randomly generated number as a client identifier. This cookie helps us analyze how visitors interact with our website and allows us to improve user experience by:<ul><li>Tracking User Behavior: Identifying and differentiating users for analytics purposes, helping us understand how visitors navigate our site, what pages they visit, and how long they stay.</li><li>Session Tracking: Tracking sessions to monitor user interactions within a specific time frame, including pageviews, clicks, and other engagement metrics.</li><li>Optimizing Performance: The data collected from this cookie helps us optimize website functionality, user experience, and performance.</li></ul>The _ga cookie does not store any personally identifiable information, and it is primarily used for statistical purposes to help us improve our website.<br>Duration: The _ga cookie has a duration of 2 years from the date it is set or updated.</td>
+                            <td><a href="https://developers.google.com/analytics/devguides/collection/analyticsjs/cookie-usage" target="_blank">Google Analytics Cookie Usage</a></td>
+                        </tr>
+                        <tr>
+                            <td><code>cf_clearance</code></td>
+                            <td>This cookie is essential for our site to verify that a user has passed a Cloudflare security check, such as a CAPTCHA or browser integrity check. It ensures uninterrupted access to the website for users who have already proven they are not malicious bots.<ul><li>This cookie:<ul><li>(f) Allows Cloudflare to distinguish between trusted human users and potentially malicious traffic.</li><li>Helps maintain performance and security of the website by preventing repeated challenges once clearance has been granted.</li><li>Is set by Cloudflare and is necessary for the proper functioning of protection mechanisms like rate limiting and bot mitigation.</li></ul></li></ul>Duration: The cf_clearance cookie typically persists for 30 minutes to 1 day, but it may last longer.</td>
+                            <td><a href="https://developers.cloudflare.com/fundamentals/reference/policies-compliance/cookie-table/#cf_clearance" target="_blank">Cloudflare Clearance Cookie</a></td>
+                        </tr>
+						<tr>
+                            <td><code>cookies_accepted</code></td>
+                            <td> This cookie stores the user's consent decision regarding the use of cookies on the website, allowing the site to remember the user's preference and avoid repeatedly showing the cookie consent banner.<ul><li>This cookie:<ul><li>(f) Remembers whether the user has accepted or declined non-essential cookies.</li><li>Prevents the cookie banner from reappearing unnecessarily on subsequent visits.</li><li>Improves user experience by respecting their cookie preferences.</li></ul></li></ul>Duration: This cookie persists for 1 year from the time of consent.</td>
+                            <td>No third-party access</td>
+                        </tr>
+                    </tbody>
+                </table>
+				<br>
+                <p>To opt out of being tracked by Google Analytics across all websites, visit <a href="http://tools.google.com/dlpage/gaoptout" target="_blank">http://tools.google.com/dlpage/gaoptout</a>.</p>
+				<p><a id="resetCookiePrefs" href="#">Click here</a> to reset your cookie preferences and refresh the page.</p>
+            </div>
+        `;
+
+        // Set the HTML to the results div
+        if (resultsDiv) {
+            resultsDiv.innerHTML = cookieInfoHTML;
+        } else {
+            console.error("Results div not found when trying to show cookie info.");
+        }
+		
+		// Attach event listener for the dynamically added reset link
+        const resetLink = document.getElementById('resetCookiePrefs');
+        if (resetLink) {
+            console.log("resetCookiePrefs link found. Attaching listener.");
+            resetLink.addEventListener('click', function(event) {
+                event.preventDefault();
+                resetCookiePreferences();
+            });
+        } else {
+            console.error("resetCookiePrefs link NOT found after dynamic creation.");
+        }
+    }
+
+
+    function resetCookiePreferences() {
+        console.log("Resetting cookie preferences...");
+        document.cookie = "cookies_accepted=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        console.log("cookies_accepted cookie should be deleted.");
+        location.reload();
+    }
+	
+	document.addEventListener("DOMContentLoaded", function() {
+        console.log("DOMContentLoaded event fired and listener entered.");
         // acceptCookies and declineCookies are defined within this IIFE's scope
         
         function allConsentGranted() {
@@ -825,7 +911,8 @@
                 'analytics_storage': 'granted'
             });
             // Optionally set a cookie to remember the user's choice
-            document.cookie = "cookies_accepted=true; path=/; max-age=" + 60*60*24*365;
+            document.cookie = "cookies_accepted=true; path=/; max-age=" + 60*60*24*365; // 1 year
+            console.log("All consent granted and cookie_accepted=true set.");
         }
 
         function allConsentDeclined() {
@@ -836,37 +923,55 @@
                 'analytics_storage': 'denied'
             });
             // Optionally set a cookie to remember the user's choice
-            document.cookie = "cookies_accepted=false; path=/; max-age=" + 60*60*24*365;
+            document.cookie = "cookies_accepted=false; path=/; max-age=" + 60*60*24*365; // 1 year
+            console.log("All consent declined and cookie_accepted=false set.");
         }
 
         const acceptButton = document.getElementById("acceptCookies");
         const declineButton = document.getElementById("declineCookies");
+        
+        // Link for showing cookie info
+        const showCookieInfoLink = document.getElementById("showCookieInfo"); 
 
         if (acceptButton) {
             acceptButton.addEventListener("click", function(event) {
                 event.preventDefault();
                 allConsentGranted();
-                acceptCookies(); // Call the function defined in this IIFE
+                acceptCookies(); 
             });
+        } else {
+            console.error("Accept cookies button not found.");
         }
 
         if (declineButton) {
             declineButton.addEventListener("click", function(event) {
                 event.preventDefault();
                 allConsentDeclined();
-                declineCookies(); // Call the function defined in this IIFE
+                declineCookies(); 
             });
+        } else {
+            console.error("Decline cookies button not found.");
+        }
+
+        // Attach event listener for the "Cookie Info" link in the footer
+        if (showCookieInfoLink) {
+            console.log("showCookieInfo link found. Attaching listener.");
+            showCookieInfoLink.addEventListener('click', function(event) {
+                event.preventDefault();
+                showCookieInfo();       // Call the function to display cookie info
+            });
+        } else {
+            console.error("showCookieInfo link NOT found.");
         }
         
-        // Check if cookies are already accepted
-        if(document.cookie.indexOf('cookies_accepted=true') !== -1) {
-            // Update consent status immediately
-            allConsentGranted();
-            acceptCookies();
-        } else if(document.cookie.indexOf('cookies_accepted=false') !== -1) { // Added else if to prevent flicker if neither
-            // Update consent status immediately
-            allConsentDeclined();
-            declineCookies();
+        // Check if cookies are already accepted/declined from a previous session
+        // And hide banner if already actioned
+        if(document.cookie.includes('cookies_accepted=true')) {
+            allConsentGranted(); // Ensure gtag consent is updated
+            acceptCookies();     // Hide banner
+        } else if(document.cookie.includes('cookies_accepted=false')) {
+            allConsentDeclined(); // Ensure gtag consent is updated
+            declineCookies();     // Hide banner
         } else {
             // If no cookie is set, the banner should be visible by default
             var cookieBanner = document.getElementById("cookie-banner");
@@ -898,7 +1003,7 @@
     window.searchCompany = searchCompany;
     window.resetForm = resetForm;
     window.patchNotes = patchNotes;
-    window.exportToPDF = exportToPDF; // Still needed for dynamically generated buttons
-    window.exportToCSV = exportToCSV; // Still needed for dynamically generated buttons
+    window.exportToPDF = exportToPDF;
+    window.exportToCSV = exportToCSV;
 
 })();
