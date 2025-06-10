@@ -76,7 +76,7 @@ To disable Google Analytics:
 1.  **In `index.html`:**
     *   Remove the Google Analytics script block from the `<head>` section. This block starts with `<!-- Google Analytics -->` and includes the `gtag.js` loading and `gtag('config', '...');` calls.
     *   Remove the cookie consent banner HTML from the end of the `<body>`. This is the `div` with `id="cookie-banner"`: `<!--- Google Analytic Consent ---> <div id="cookie-banner" ...>...</div>`.
-    *   Remove the cookie info link `<a id="showCookieInfo" href="#">Cookie Info</a></p>`.
+    *   Remove the cookie info link `<a id="showCookieInfo" href="#">Cookie Info</a>`.
 2.  **In `ubo.js` (Optional but Recommended for full removal):**
     *   At the beginning of the IIFE in `ubo.js`, you will find a line: `gtag('consent', 'default', { ... });`. You can remove this line.
     *   Further down in `ubo.js`, remove the section `// Function to show cookie information`
