@@ -168,7 +168,7 @@
         resultsDiv.innerHTML = "";
 
         // Start the recursive ownership tracing
-        await findUltimateOwner(companyNumber, [], resultsDiv);
+        await findUltimateOwner(companyNumber, companyName, [], resultsDiv, new Set());
 
         const buttonContainerHTML = `
             <div id="buttonContainer">
@@ -179,11 +179,24 @@
         resultsDiv.innerHTML += buttonContainerHTML;
     }
 
+
     // Recursively trace ownership
-    async function findUltimateOwner(companyNumber, ownershipChain = [], resultsDiv) {
+    async function findUltimateOwner(companyNumber, companyName, ownershipChain, resultsDiv, searchedCompanies) {
+        const currentFormattedCompanyNumber = formatCompanyNumber(companyNumber);
+
+        // Check for circular references
+        if (searchedCompanies.has(currentFormattedCompanyNumber)) {
+            console.warn(`Circular reference detected: Company ${currentFormattedCompanyNumber} already processed.`);
+            let circularRefSection = document.createElement("div");
+            const companyNameForDisplay = companyName || 'Unknown Company';
+            circularRefSection.innerHTML = `<br><h3>Circular reference detected for ${companyNameForDisplay} - ${currentFormattedCompanyNumber}.</h3>`;
+            resultsDiv.appendChild(circularRefSection);
+            return ownershipChain;
+        }
+        searchedCompanies.add(currentFormattedCompanyNumber);
+
         // companyNumber parameter is already formatted by searchCompany or previous recursive call.
         // For clarity and safety, format again, especially if findUltimateOwner could be called from other places.
-        const currentFormattedCompanyNumber = formatCompanyNumber(companyNumber); 
         console.log("Fetching PSC data for company:", currentFormattedCompanyNumber);
 
         // Fetch company information
@@ -210,7 +223,7 @@
         
         const companyNameForDisplay = companyInfo.company_name || UNKNOWN_COMPANY_NAME;
         const companyLink = `<a href="https://find-and-update.company-information.service.gov.uk/company/${currentFormattedCompanyNumber}/persons-with-significant-control" target="_blank">${companyNameForDisplay}</a>`;
-        
+
         // Pass currentFormattedCompanyNumber to getPSC.
         // getPSC itself also calls formatCompanyNumber.
         const pscData = await getPSC(currentFormattedCompanyNumber);
@@ -297,10 +310,10 @@
                 </tr>
             `;
 
-            // Recursively trace ownership for UK-based corporate entities
+             // Recursively trace ownership for UK-based corporate entities
             if (!psc.ceased && registrationNumber && registrationNumber.length === 8 && psc.kind === "corporate-entity-person-with-significant-control" && UK_JURISDICTIONS.includes(legalAuthority)) {
                 console.log("Recursively tracing ownership for company:", registrationNumber);
-                await findUltimateOwner(registrationNumber, ownershipChain, resultsDiv);
+                await findUltimateOwner(registrationNumber, psc.name, ownershipChain, resultsDiv, searchedCompanies);
             } else {
                 console.log('No valid company number found for recursion or non-UK entity or individual.');
             }
@@ -807,6 +820,14 @@
                                     <li>Added cookie info page.</li>
 									<li>Added cookie preference reset link.</li>
                                 </ul>
+                            </td>
+                        </tr>
+						<tr>
+                            <td>1.2.8</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Added code to avoid infinite loops.</li>
                             </td>
                         </tr>
                     </table>
