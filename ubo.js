@@ -1,6 +1,7 @@
 (function() {
     // Define dataLayer and the gtag function if not already defined
     window.dataLayer = window.dataLayer || [];
+    let firstCompanyAddress = ''; // To store the address of the first company searched
     function gtag(){dataLayer.push(arguments);}
 
     // Set default consent to 'denied'
@@ -129,6 +130,7 @@
         // Clear previous results and introduction
         resultsDiv.innerHTML = "";
         companyNameDisplay.innerHTML = "";
+        firstCompanyAddress = ''; // Reset address on new search
 
         // Validate company number format (6 to 8 chars)
         const companyNumberRegex = /^[a-zA-Z0-9]{6,8}$/;
@@ -156,6 +158,22 @@
         if (!companyInfo) {
             resultsDiv.innerHTML = MSG_COMPANY_NOT_FOUND_INITIAL;
             return;
+        }
+
+        // Store the address of the first company
+        if (companyInfo.registered_office_address) {
+            const addr = companyInfo.registered_office_address;
+            // Format the address, filtering out any null or undefined parts
+            firstCompanyAddress = [
+                addr.address_line_1,
+                addr.address_line_2,
+                addr.locality,
+                addr.region,
+                addr.postal_code,
+                addr.country
+            ].filter(Boolean).join(', ');
+        } else {
+            firstCompanyAddress = 'Address not available';
         }
 
         // Log all the data returned about the company
@@ -186,10 +204,11 @@
 
         // Check for circular references
         if (searchedCompanies.has(currentFormattedCompanyNumber)) {
-            console.warn(`Circular reference detected: Company ${currentFormattedCompanyNumber} already processed.`);
+            console.info(`Circular reference detected: Company ${currentFormattedCompanyNumber} already processed.`);
             let circularRefSection = document.createElement("div");
+            circularRefSection.className = 'company-data-section'; // Add class for PDF export
             const companyNameForDisplay = companyName || 'Unknown Company';
-            circularRefSection.innerHTML = `<br><h3>Circular reference detected for ${companyNameForDisplay} - ${currentFormattedCompanyNumber}.</h3>`;
+            circularRefSection.innerHTML = `<br><h3>${companyNameForDisplay} (${currentFormattedCompanyNumber}) has been searched above.</h3>`;
             resultsDiv.appendChild(circularRefSection);
             return ownershipChain;
         }
@@ -230,6 +249,7 @@
 
         // Create a new section to display company ownership data
         let companySection = document.createElement("div");
+        companySection.className = 'company-data-section'; // Add class for PDF export
         companySection.innerHTML = `<br><h3>${OWNERSHIP_HEADER_PREFIX}${companyLink}</h3>`;
         resultsDiv.appendChild(companySection);
 
@@ -340,10 +360,10 @@
             pageWidth: doc.internal.pageSize.width,
             get maxWidth() { return this.pageWidth - 2 * this.margin; }, // Dynamic property for max width
             title: {
-                fontSize: 18,
-                lineHeight: 10,
+                fontSize: 16,
+                lineHeight: 8,
                 startY: 20,
-                spaceAfter: 0
+                spaceAfter: 5
             },
             table: {
                 headFillColor: [0, 188, 212],
@@ -359,7 +379,7 @@
             },
             footer: {
                 fontSize: 10,
-                text: "Searched using CJs Pi - UBO Finder",
+                text: "Searched using CJs Pi - UBO Finder V:1.2.9",
                 yPosition: doc.internal.pageSize.height - 10,
                 dateTimeWidth: 60 // Estimated width for date/time string for right alignment
             },
@@ -374,135 +394,32 @@
         // --- Helper Functions ---
 
         /**
-         * Adds the main title to the PDF document.
+         * Adds the main title and address to the PDF document.
          * @param {jsPDF} docInstance - The jsPDF instance.
          * @param {string} titleText - The text for the title.
+         * @param {string} addressText - The text for the address.
          * @param {object} config - The relevant title configuration.
-         * @param {number}- The calculated start Y position for the next element.
+         * @returns {number} - The calculated start Y position for the next element.
          */
-        function addTitle(docInstance, titleText, config) {
+        function addTitle(docInstance, titleText, addressText, config) {
             docInstance.setFontSize(config.fontSize);
             const wrappedTitle = docInstance.splitTextToSize(titleText, pdfConfig.maxWidth);
             wrappedTitle.forEach((line, index) => {
                 docInstance.text(line, pdfConfig.margin, config.startY + (index * config.lineHeight));
             });
-            return config.startY + (wrappedTitle.length * config.lineHeight) + config.spaceAfter;
-        }
+            let currentY = config.startY + (wrappedTitle.length * config.lineHeight);
 
-        /**
-         * Prepares the data for the main table by extracting it from the DOM.
-         * @returns {Array} - An array of rows for the autoTable body.
-         */
-        function prepareTableData() {
-            const tableRows = [];
-            // Iterate through each company section (h3) and its corresponding table
-            document.querySelectorAll("h3, table tr").forEach((row, rowIndex) => {
-                if (row.tagName === "H3") {
-                    // Add a spacer row if this is not the first company section
-                    if (rowIndex !== 0) {
-                        tableRows.push([{
-                            content: '',
-                            colSpan: pdfConfig.columns.length,
-                            styles: { 
-                                fillColor: [150, 150, 150], // Medium gray
-                                minCellHeight: 1, 
-                                cellPadding: 0 
-                            }
-                        }]);
-                    }
-                    // Add the company name as a styled header row
-                    tableRows.push([{
-                        content: row.textContent,
-                        colSpan: pdfConfig.columns.length,
-                        styles: {
-                            fillColor: pdfConfig.table.companySectionFillColor,
-                            fontStyle: 'bold',
-                            halign: 'center',
-                            valign: 'middle'
-                        }
-                    }]);
-                } else { // This is a <tr> element
-                    // Extract cell data (td or th)
-                    const rowData = Array.from(row.querySelectorAll("td, th")).map((cell, colIndex) => {
-                        // Special handling for the "See on Companies House" column for links
-                        if (colIndex === 4) {
-                            const linkElement = cell.querySelector("a");
-                            const linkText = cell.textContent.trim();
-                            const href = linkElement ? linkElement.getAttribute("href") : '';
-                            return href ? { content: linkText, link: href } : { content: linkText };
-                        }
-                        return { content: cell.textContent.trim() };
-                    });
-                    if (rowData.length > 0) { // Ensure it's not an empty tr or just th row if already handled
-                        tableRows.push(rowData);
-                    }
-                }
-            });
-            return tableRows;
-        }
-        
-        /**
-         * Draws the main table in the PDF.
-         * @param {jsPDF} docInstance - The jsPDF instance.
-         * @param {number} startY - The Y position to start drawing the table.
-         * @param {Array} tableBodyData - The data for the table body.
-         * @param {object} config - The PDF configuration object.
-         */
-        function drawTable(docInstance, startY, tableBodyData, config) {
-            docInstance.autoTable({
-                startY: startY,
-                head: [config.columns],
-                body: tableBodyData,
-                theme: 'grid',
-                showHead: 'never',
-                headStyles: {
-                    fillColor: config.table.headFillColor,
-                    halign: config.table.headAlign
-                },
-                styles: {
-                    fontSize: config.table.fontSize,
-                    cellPadding: config.table.cellPadding,
-                    overflow: config.table.overflow,
-                    halign: config.table.cellAlign,
-                    valign: config.table.cellVAlign
-                },
-                margin: { bottom: config.table.marginBottom, left: config.margin, right: config.margin },
-                didParseCell: function(data) {
-                    // Remove default text rendering if a link is present
-                    if (data.cell.raw.link) {
-                        data.cell.text = ''; 
-                    }
-                },
-                didDrawCell: function(data) {
-                    // Manually draw text with link for the "See on Companies House" column
-                    if (data.column.index === 4 && data.cell.section === 'body' && data.cell.raw.link) {
-                        docInstance.setTextColor(...config.colors.linkColor);
-                        
-                        const text = data.cell.raw.content;
-                        const textWidth = docInstance.getTextWidth(text);
-                        
-                        // Calculate X for horizontal centering
-                        const newX = data.cell.x + (data.cell.width - textWidth) / 2;
-                        
-                        // Calculate Y for vertical centering
-                        // The base of the text will be at this Y.
-                        // Adjusted the offset from (fontSize / 2.5) to (fontSize * 0.33)
-                        const newY = data.cell.y + data.cell.height / 2 + (data.cell.styles.fontSize * 0.33); 
+            if (addressText) {
+                docInstance.setFontSize(config.fontSize - 6); // Smaller font for address
+                const wrappedAddress = docInstance.splitTextToSize(addressText, pdfConfig.maxWidth);
+                currentY += 2; // Add a very small gap before the address
+                wrappedAddress.forEach((line, index) => {
+                    docInstance.text(line, pdfConfig.margin, currentY + (index * (config.lineHeight - 4)));
+                });
+                currentY += (wrappedAddress.length * (config.lineHeight - 4));
+            }
 
-                        docInstance.textWithLink(
-                            text,
-                            newX,
-                            newY,
-                            { url: data.cell.raw.link }
-                        );
-                        docInstance.setTextColor(...config.colors.defaultText);
-                    }
-                },
-                didDrawPage: function(data) {
-                    // Add footer to each page using docInstance.internal.getNumberOfPages() for total pages.
-                    addFooter(docInstance, data.pageNumber, docInstance.internal.getNumberOfPages(), config);
-                }
-            });
+            return currentY + config.spaceAfter;
         }
 
         /**
@@ -516,16 +433,16 @@
             docInstance.setFontSize(config.footer.fontSize);
 
             // Left-aligned footer text
-            docInstance.text(config.footer.text, config.margin, config.footer.yPosition);
+            docInstance.text(config.footer.text, config.margin, config.footer.yPosition, { fontStyle: 'normal' });
 
             // Right-aligned date and time
             const date = new Date();
             const formattedDate = date.toLocaleString("en-GB", { hour12: false });
             // Align to the right margin
-            docInstance.text(formattedDate, config.pageWidth - config.margin, config.footer.yPosition, { align: 'right' });
+            docInstance.text(formattedDate, config.pageWidth - config.margin, config.footer.yPosition, { align: 'right', fontStyle: 'normal' });
             
             // Centered page number with placeholder for total pages
-            docInstance.text(`${pageNumber} / {totalPages}`, config.pageWidth / 2, config.footer.yPosition, { align: 'center' });
+            docInstance.text(`${pageNumber} / {totalPages}`, config.pageWidth / 2, config.footer.yPosition, { align: 'center', fontStyle: 'normal' });
         }
 
         // --- Main PDF Generation Flow ---
@@ -537,79 +454,140 @@
         const firstCompanyNumber = document.getElementById("companyNumber").value.toUpperCase();
         const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
-        // 1. Add Title
+        // 1. Add Title and Address
         const titleText = `Company Ownership Data: ${firstCompanyName} (${firstCompanyNumber})`;
-        let currentY = addTitle(doc, titleText, pdfConfig.title);
+        const addressWithPrefix = firstCompanyAddress ? `Registered address: ${firstCompanyAddress}` : '';
+        let currentY = addTitle(doc, titleText, addressWithPrefix, pdfConfig.title);
 
-        // 2. Prepare Table Data
-        const tableBody = prepareTableData();
-        
-        // 3. Draw Table (footer is drawn via didDrawPage callback in drawTable)
-        drawTable(doc, currentY, tableBody, pdfConfig);
+        // 2. Loop through each company section and generate a table
+        document.querySelectorAll("div#results > div.company-data-section").forEach(companySection => {
+            const companyName = companySection.querySelector("h3").textContent;
+            const table = companySection.querySelector("table");
+            let bodyRows = [];
 
-        // 4. Replace placeholder for total pages
+            // Add the company title row, styled to look like a section header
+            bodyRows.push([{
+                content: companyName,
+                colSpan: pdfConfig.columns.length,
+                styles: { fillColor: [180, 180, 180], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' }
+            }]);
+
+            if (table) {
+                // Add the bolded column header row only if there is a table
+                bodyRows.push(pdfConfig.columns.map(col => ({
+                    content: col,
+                    styles: { fontStyle: 'bold', fillColor: [237, 237, 237] }
+                })));
+
+                // Add the data rows
+                const dataRows = Array.from(table.querySelectorAll("tr")).slice(1).map(tr =>
+                    Array.from(tr.querySelectorAll("td")).map((td, colIndex) => {
+                        const cellText = td.textContent ? td.textContent.trim() : '';
+                        if (colIndex === 4) { // Link column
+                            const link = td.querySelector("a");
+                            if (link) {
+                                return { content: cellText, link: link.href };
+                            }
+                        }
+                        return { content: cellText };
+                    })
+                );
+                bodyRows = bodyRows.concat(dataRows);
+            }
+
+            // Draw the table for the current company. It will only contain the grey header if no table exists.
+            doc.autoTable({
+                startY: currentY,
+                body: bodyRows,
+                theme: 'grid',
+                showHead: 'never',
+                columnStyles: {
+                    4: { minCellWidth: 45 }
+                },
+                styles: {
+                    fontSize: pdfConfig.table.fontSize,
+                    cellPadding: pdfConfig.table.cellPadding,
+                    overflow: 'linebreak',
+                    halign: pdfConfig.table.cellAlign,
+                    valign: pdfConfig.table.cellVAlign
+                },
+                margin: { bottom: pdfConfig.table.marginBottom, left: pdfConfig.margin, right: pdfConfig.margin },
+                didParseCell: data => {
+                    if (data.cell.raw.link) {
+                        data.cell.text = '';
+                    }
+                },
+                didDrawCell: data => {
+                    if (data.column.index === 4 && data.cell.raw && data.cell.raw.link) {
+                        doc.setTextColor(...pdfConfig.colors.linkColor);
+                        const text = data.cell.raw.content || '';
+                        const textWidth = doc.getTextWidth(text);
+                        const x = data.cell.x + (data.cell.width - textWidth) / 2;
+                        const y = data.cell.y + data.cell.height / 2 + (data.cell.styles.fontSize * 0.33);
+                        doc.textWithLink(text, x, y, { url: String(data.cell.raw.link) });
+                        doc.setTextColor(...pdfConfig.colors.defaultText);
+                    }
+                },
+                didDrawPage: data => {
+                    addFooter(doc, data.pageNumber, 0, pdfConfig);
+                }
+            });
+            currentY = doc.autoTable.previous.finalY + 5;
+        });
+
+        // 3. Replace placeholder for total pages
         doc.putTotalPages('{totalPages}');
 
-        // 5. Save PDF
+        // 4. Save PDF
         const filename = `Company Ownership Data - ${firstCompanyName} - ${firstCompanyNumber} - ${currentDate}.pdf`;
         doc.save(filename);
     }
 
-    // Function to export results to .csv
     function exportToCSV() {
-        let csvContent = "data:text/csv;charset=utf-8,";
+        let csvContent = "";
         const firstCompanyHeader = document.querySelector("h3");
-        const firstCompanyText = firstCompanyHeader ? firstCompanyHeader.textContent.replace("Ownership for Company: ", "") : "";
-        const firstCompanyName = firstCompanyText.split(" - ")[0];
+        const firstCompanyText = firstCompanyHeader ? firstCompanyHeader.textContent.replace(OWNERSHIP_HEADER_PREFIX, "") : "";
+        const firstCompanyName = firstCompanyText.split(" - ")[0] || "CompanyData";
         const firstCompanyNumber = document.getElementById("companyNumber").value.toUpperCase();
-
-        // Get the current date in YYYYMMDD format
         const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
-        // Add the initial company ownership data header
-        csvContent += `Company Ownership Data: ${firstCompanyName} ${firstCompanyNumber}\n\n`;
+        // Add the main CSV header
+        csvContent += `Company Ownership Data: ${firstCompanyName} (${firstCompanyNumber})\n\n`;
 
-        let currentCompanyName = "";
-        let addColumnTitles = false;
-        document.querySelectorAll("h3, table tr").forEach(row => {
-            if (row.tagName === "H3") {
-                // Add company ownership header
-                if (currentCompanyName !== "") {
-                    csvContent += "\n"; // Add an extra empty line between companies
-                }
-                currentCompanyName = row.textContent.replace("Ownership for Company: ", "");
-                csvContent += `${currentCompanyName}\n`;
-                addColumnTitles = true; // Set flag to add column titles after company name
-            } else if (row.querySelectorAll("td").length > 0) {
-                // Add column headings above each company's result if there are results and if flag is set
-                if (addColumnTitles) {
-                    csvContent += "Company Owner,Company Number,Ownership Percentage,Status,See on Companies House\n";
-                    addColumnTitles = false; // Reset flag after adding column titles
-                }
-                // Add table rows
-                let rowData = Array.from(row.querySelectorAll("td")).map((cell, colIndex) => {
-                    if (colIndex === 4) {
-                        const linkElement = cell.querySelector("a");
-                        return linkElement ? linkElement.getAttribute("href") : cell.textContent;
-                    } else {
-                        return cell.textContent;
-                    }
-                }).join(",");
-                csvContent += `${rowData}\n`;
-            } else if (row.tagName === "P") {
-                // Add any additional text like "No further data is available" to the CSV
-                let additionalText = row.textContent.trim();
-                if (additionalText) {
-                    csvContent += `${additionalText}\n`;
-                }
+        // Process each company section
+        document.querySelectorAll("div#results > div.company-data-section").forEach(companySection => {
+            const companyName = companySection.querySelector("h3").textContent.trim();
+            csvContent += `"${companyName}"\n`;
+
+            const table = companySection.querySelector("table");
+            if (table) {
+                // Add column headers
+                csvContent += "Company Owner,Company Number,Ownership Percentage,Status,See on Companies House\n";
+                
+                // Add data rows
+                const rows = Array.from(table.querySelectorAll("tr")).slice(1); // Skip header row
+                rows.forEach(row => {
+                    const rowData = Array.from(row.querySelectorAll("td")).map((cell, colIndex) => {
+                        const cellText = cell.textContent.trim();
+                        if (colIndex === 4) { // Link column
+                            const link = cell.querySelector("a");
+                            return link ? `"${link.href}"` : `"${cellText}"`;
+                        }
+                        return `"${cellText}"`; // Wrap all content in quotes
+                    }).join(",");
+                    csvContent += `${rowData}\n`;
+                });
             }
+            csvContent += "\n"; // Add a blank line between companies
         });
 
-        let encodedUri = encodeURI(csvContent);
-        let link = document.createElement("a");
-        const filename = `Company Ownership Data - ${firstCompanyName} ${firstCompanyNumber} - ${currentDate}.csv`;
-        link.setAttribute("href", encodedUri);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        const filename = `Company Ownership Data - ${firstCompanyName} - ${firstCompanyNumber} - ${currentDate}.csv`;
         link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -828,6 +806,14 @@
                             <td>
                                 <ul>
                                     <li>Added code to avoid infinite loops.</li>
+                            </td>
+                        </tr>
+						<tr>
+                            <td>1.2.9</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Re-worked export to PDF functionality.</li>
                             </td>
                         </tr>
                     </table>
