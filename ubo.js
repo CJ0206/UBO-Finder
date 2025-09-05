@@ -552,7 +552,7 @@
         const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         // Add the main CSV header
-        csvContent += `Company Ownership Data: ${firstCompanyName} (${firstCompanyNumber})\n\n`;
+        csvContent += `Company Ownership Data: ${firstCompanyName}\n\n`;
 
         // Process each company section
         document.querySelectorAll("div#results > div.company-data-section").forEach(companySection => {
