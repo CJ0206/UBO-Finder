@@ -585,7 +585,7 @@
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        const filename = `Company Ownership Data - ${firstCompanyName} - ${firstCompanyNumber} - ${currentDate}.csv`;
+        const filename = `Company Ownership Data - ${firstCompanyName} - ${currentDate}.csv`;
         link.setAttribute("download", filename);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
