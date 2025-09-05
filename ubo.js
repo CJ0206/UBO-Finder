@@ -250,7 +250,7 @@
         // Create a new section to display company ownership data
         let companySection = document.createElement("div");
         companySection.className = 'company-data-section'; // Add class for PDF export
-        companySection.innerHTML = `<br><h3>${OWNERSHIP_HEADER_PREFIX}${companyLink}</h3>`;
+        companySection.innerHTML = `<br><h3>${OWNERSHIP_HEADER_PREFIX}${companyLink} (${currentFormattedCompanyNumber})</h3>`;
         resultsDiv.appendChild(companySection);
 
         if (!pscData || !pscData.items || pscData.items.length === 0) {
@@ -450,7 +450,7 @@
         // Retrieve initial company details for title and filename
         const firstCompanyHeader = document.querySelector("h3");
         const firstCompanyText = firstCompanyHeader ? firstCompanyHeader.textContent.replace(OWNERSHIP_HEADER_PREFIX, "") : "";
-        const firstCompanyName = firstCompanyText.split(" - ")[0] || "CompanyData";
+        const firstCompanyName = firstCompanyText.split(" (")[0] || "CompanyData";
         const firstCompanyNumber = document.getElementById("companyNumber").value.toUpperCase();
         const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
