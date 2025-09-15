@@ -16,8 +16,8 @@
     const BASE_URL = "https://[BASE_URL]/companies-house-api"; // NGINX proxy API
     const UK_JURISDICTIONS = ["england", "wales", "scotland", "united kingdom (scotland)", "united kingdom", "uinted kingdom", "united kingdom (england)", "united kingdom (wales)", "england & wales", "england and wales", "uk", "england-wales"];
     const MSG_LOADING = "<p>Loading...</p>";
-    const MSG_COMPANY_NOT_FOUND_INITIAL = "<p>Error: Company not found.</p><p>Please check the company number.</p>";
-    const MSG_INVALID_COMPANY_NUMBER_FORMAT = "<p>Invalid Company Number format. Please enter a 6 to 8-character alphanumeric company number.</p>";
+    const MSG_COMPANY_NOT_FOUND_INITIAL = "<p class='error-message'>Error: Company not found.</p><p>Please check the company number.</p>";
+    const MSG_INVALID_COMPANY_NUMBER_FORMAT = "<p class='error-message'>Invalid Company Number format. Please enter a 6 to 8-character alphanumeric company number.</p>";
     const OWNERSHIP_HEADER_PREFIX = "Ownership for Company: ";
     const STATUS_CEASED = "Ceased";
     const STATUS_ACTIVE = "Active";
@@ -26,11 +26,14 @@
     const INVALID_CH_NUMBER_VIEW_LINK = "N/A - Invalid CH Number.";
     const OWNERSHIP_NOT_SPECIFIED = "Not Specified";
     const UNKNOWN_COMPANY_NAME = "Unknown Company";
-    const UNKNOWN_JURISDICTION = "an unknown jurisdiction";
-    const MSG_ERROR_404 = "<p>Error: Company not found (404). Please double-check the company number. If the number is correct and the error persists, the company may not be in the Companies House database or there might be an issue with the API service.</p>";
-    const MSG_ERROR_429 = "<p>Error: Too many requests (429). You've exceeded the API request limit. Please wait for 5 minutes before trying again.</p>";
-    const MSG_ERROR_FETCH = "<p>Error: Unable to fetch company information. Please check your connection or try again later.</p>";
-    const MSG_ERROR_COMPANY_NOT_FOUND_GENERAL = "<p>The company could not be found.</p><p>Please note this form only works with company numbers.</p>";
+    const UNKNOWN_JURISDICTION = "Unknown Jurisdiction";
+    const MSG_ERROR_401 = "<p class='error-message'>Error: Unauthorized (401). The request could not be authenticated. Please try again or contact us if the error persists.</p>";
+    const MSG_ERROR_404 = "<p class='error-message'>Error: Company not found (404). Please double-check the company number. If the number is correct and the error persists, the company may not be in the Companies House database or there might be an issue with the API service.</p>";
+    const MSG_ERROR_429 = "<p class='error-message'>Error: Too many requests (429). You've exceeded the API request limit. Please wait for 5 minutes before trying again.</p>";
+    const MSG_ERROR_500 = "<p class='error-message'>Error: Internal Server Error (500). The Companies House server encountered an unexpected condition. Please try again later.</p>";
+    const MSG_ERROR_503 = "<p class='error-message'>Error: Service Unavailable (503). The Companies House server is currently unable to handle the request. Please try again later.</p>";
+    const MSG_ERROR_FETCH = "<p class='error-message'>Error: Unable to fetch company information. Please check your connection or try again later.</p>";
+    const MSG_ERROR_COMPANY_NOT_FOUND_GENERAL = "<p class='error-message'>The company could not be found.</p><p>Please note this form only works with UK Companies House company numbers.</p>";
 
 
     // Fetch basic company data (including name) for a company
@@ -48,13 +51,13 @@
 
             if (!response.ok) {
                 console.error("Error fetching company info:", response.status);
-                return null;
+                return { data: null, status: response.status };
             }
 
-            return await response.json();
+            return { data: await response.json(), status: response.status };
         } catch (error) {
             console.error("Fetch error:", error);
-            return null;
+            return { data: null, status: 0 }; // Using 0 for network or other fetch errors
         }
     }
 
@@ -73,13 +76,13 @@
 
             if (!response.ok) {
                 console.error("Error fetching PSC data:", response.status);
-                return null;
+                return { data: null, status: response.status };
             }
 
-            return await response.json();
+            return { data: await response.json(), status: response.status };
         } catch (error) {
             console.error("Fetch error:", error);
-            return null;
+            return { data: null, status: 0 }; // Using 0 for network or other fetch errors
         }
     }
 
@@ -152,13 +155,37 @@
 
         resultsDiv.innerHTML = MSG_LOADING; // Show loading message
 
-        const companyInfo = await getCompanyInfo(companyNumber); // Fetch company information
+        const companyInfoResponse = await getCompanyInfo(companyNumber); // Fetch company information
 
-        // Handle case where company information is not found
-        if (!companyInfo) {
-            resultsDiv.innerHTML = MSG_COMPANY_NOT_FOUND_INITIAL;
+        if (companyInfoResponse.status !== 200) {
+            let errorMessage;
+            switch (companyInfoResponse.status) {
+                case 0:
+                    errorMessage = MSG_ERROR_FETCH;
+                    break;
+                case 401:
+                    errorMessage = MSG_ERROR_401;
+                    break;
+                case 404:
+                    errorMessage = MSG_ERROR_404;
+                    break;
+                case 429:
+                    errorMessage = MSG_ERROR_429;
+                    break;
+                case 500:
+                    errorMessage = MSG_ERROR_500;
+                    break;
+                case 503:
+                    errorMessage = MSG_ERROR_503;
+                    break;
+                default:
+                    errorMessage = MSG_ERROR_COMPANY_NOT_FOUND_GENERAL;
+            }
+            resultsDiv.innerHTML = errorMessage;
             return;
         }
+
+        const companyInfo = companyInfoResponse.data;
 
         // Store the address of the first company
         if (companyInfo.registered_office_address) {
@@ -207,7 +234,7 @@
             console.info(`Circular reference detected: Company ${currentFormattedCompanyNumber} already processed.`);
             let circularRefSection = document.createElement("div");
             circularRefSection.className = 'company-data-section'; // Add class for PDF export
-            const companyNameForDisplay = companyName || 'Unknown Company';
+            const companyNameForDisplay = companyName || UNKNOWN_COMPANY_NAME;
             circularRefSection.innerHTML = `<br><h3>${companyNameForDisplay} (${currentFormattedCompanyNumber}) has been searched above.</h3>`;
             resultsDiv.appendChild(circularRefSection);
             return ownershipChain;
@@ -219,33 +246,33 @@
         console.log("Fetching PSC data for company:", currentFormattedCompanyNumber);
 
         // Fetch company information
-        let companyInfo;
-        try {
-            // Pass currentFormattedCompanyNumber to getCompanyInfo.
-            // getCompanyInfo itself also calls formatCompanyNumber, which is fine (idempotent).
-            companyInfo = await getCompanyInfo(currentFormattedCompanyNumber);
-            if (!companyInfo) { 
-                // Simplified error handling: if no companyInfo, assume fetch error or not found.
-                resultsDiv.innerHTML = MSG_ERROR_FETCH; 
-                return;
+        const companyInfoResponse = await getCompanyInfo(currentFormattedCompanyNumber);
+
+        if (companyInfoResponse.status !== 200) {
+            // Handle error without clearing previous results
+            let errorSection = document.createElement("div");
+            errorSection.className = 'company-data-section';
+            let errorMessage;
+            switch (companyInfoResponse.status) {
+                case 0: errorMessage = MSG_ERROR_FETCH; break;
+                case 401: errorMessage = MSG_ERROR_401; break;
+                case 404: errorMessage = MSG_ERROR_404; break;
+                case 429: errorMessage = MSG_ERROR_429; break;
+                case 500: errorMessage = MSG_ERROR_500; break;
+                case 503: errorMessage = MSG_ERROR_503; break;
+                default: errorMessage = MSG_ERROR_COMPANY_NOT_FOUND_GENERAL;
             }
-        } catch (error) { 
-            console.error("Error fetching company info in findUltimateOwner:", error);
-            resultsDiv.innerHTML = MSG_ERROR_FETCH;
-            return;
-        }
-        // This check might be redundant if the try-catch handles !companyInfo, but kept for safety.
-        if (!companyInfo) {
-            resultsDiv.innerHTML = MSG_COMPANY_NOT_FOUND_INITIAL; 
-            return;
+            errorSection.innerHTML = `<br><h3>Error for company ${currentFormattedCompanyNumber}:</h3>${errorMessage}`;
+            resultsDiv.appendChild(errorSection);
+            return ownershipChain; // Stop this path of recursion
         }
         
+        const companyInfo = companyInfoResponse.data;
         const companyNameForDisplay = companyInfo.company_name || UNKNOWN_COMPANY_NAME;
         const companyLink = `<a href="https://find-and-update.company-information.service.gov.uk/company/${currentFormattedCompanyNumber}/persons-with-significant-control" target="_blank">${companyNameForDisplay}</a>`;
 
-        // Pass currentFormattedCompanyNumber to getPSC.
-        // getPSC itself also calls formatCompanyNumber.
-        const pscData = await getPSC(currentFormattedCompanyNumber);
+        // Fetch PSC data
+        const pscDataResponse = await getPSC(currentFormattedCompanyNumber);
 
         // Create a new section to display company ownership data
         let companySection = document.createElement("div");
@@ -253,6 +280,27 @@
         companySection.innerHTML = `<br><h3>${OWNERSHIP_HEADER_PREFIX}${companyLink} (${currentFormattedCompanyNumber})</h3>`;
         resultsDiv.appendChild(companySection);
 
+        if (pscDataResponse.status !== 200) {
+            let errorMessage;
+            switch (pscDataResponse.status) {
+                case 404: // For PSC, 404 can mean no PSC data, which is not a critical error.
+                    let jurisdiction = companyInfo?.jurisdiction || UNKNOWN_JURISDICTION;
+                    jurisdiction = capitalizeWords(jurisdiction); // Capitalize each word in the jurisdiction
+                    companySection.innerHTML += `<br><h3>${companyNameForDisplay} is registered in ${jurisdiction}. No further PSC data is available.</h3>`;
+                    return ownershipChain;
+                case 0: errorMessage = MSG_ERROR_FETCH; break;
+                case 401: errorMessage = MSG_ERROR_401; break;
+                case 429: errorMessage = MSG_ERROR_429; break;
+                case 500: errorMessage = MSG_ERROR_500; break;
+                case 503: errorMessage = MSG_ERROR_503; break;
+                default: errorMessage = `<p class='error-message'>An unexpected error occurred while fetching PSC data.</p>`;
+            }
+            companySection.innerHTML += errorMessage;
+            return ownershipChain; // Stop this path of recursion
+        }
+
+        const pscData = pscDataResponse.data;
+        
         if (!pscData || !pscData.items || pscData.items.length === 0) {
             let jurisdiction = companyInfo?.jurisdiction || UNKNOWN_JURISDICTION;
             jurisdiction = capitalizeWords(jurisdiction); // Capitalize each word in the jurisdiction
