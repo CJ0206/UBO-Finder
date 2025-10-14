@@ -26,15 +26,15 @@
     const INVALID_CH_NUMBER_VIEW_LINK = "N/A - Invalid CH Number.";
     const OWNERSHIP_NOT_SPECIFIED = "Not Specified";
     const UNKNOWN_COMPANY_NAME = "Unknown Company";
-    const UNKNOWN_JURISDICTION = "Unknown Jurisdiction";
-    const MSG_ERROR_401 = "<p class='error-message'>Error: Unauthorized (401). The request could not be authenticated. Please try again or contact us if the error persists.</p>";
-    const MSG_ERROR_404 = "<p class='error-message'>Error: Company not found (404). Please double-check the company number. If the number is correct and the error persists, the company may not be in the Companies House database or there might be an issue with the API service.</p>";
-    const MSG_ERROR_429 = "<p class='error-message'>Error: Too many requests (429). You've exceeded the API request limit. Please wait for 5 minutes before trying again.</p>";
+    const UNKNOWN_JURISDICTION = "an unknown jurisdiction";
+    const MSG_ERROR_401 = "<p class='error-message'>Error: Unauthorized (401). The request could not be authenticated. Please try again or <a href='https://support.cjspi.co.uk/'>contact us</a> if the error persists.</p>";
+    const MSG_ERROR_404 = "<p class='error-message'>Error: Company not found (404). Please double-check the company number and try again or <a href='https://support.cjspi.co.uk/'>contact us</a> with the error message and company number you are trying to search if the error persists.</p>";
+    const MSG_ERROR_429 = "<p class='error-message'>Error: Too many requests (429). You've exceeded the API request limit. Please wait for at least 5 minutes before trying again.</p>";
     const MSG_ERROR_500 = "<p class='error-message'>Error: Internal Server Error (500). The Companies House server encountered an unexpected condition. Please try again later.</p>";
     const MSG_ERROR_503 = "<p class='error-message'>Error: Service Unavailable (503). The Companies House server is currently unable to handle the request. Please try again later.</p>";
     const MSG_ERROR_FETCH = "<p class='error-message'>Error: Unable to fetch company information. Please check your connection or try again later.</p>";
-    const MSG_ERROR_COMPANY_NOT_FOUND_GENERAL = "<p class='error-message'>The company could not be found.</p><p>Please note this form only works with UK Companies House company numbers.</p>";
-
+    const MSG_ERROR_COMPANY_NOT_FOUND_GENERAL = "<p class='error-message'>The company could not be found.</p><p class='error-message'>Please note this form only works with UK Companies House company numbers.</p>";
+    const MSG_ERROR_PSC_404 = "<p class='error-message'>Error: Persons with Significant Control not found (404). This may mean the company has no PSCs, that an invalid number was returned from Companies House, or there was an issue retrieving the data.</p><p class='error-message'>If you believe there was an error, please try running the search again in a few minutes.</p>";
 
     // Fetch basic company data (including name) for a company
     async function getCompanyInfo(companyNumber) {
@@ -283,11 +283,7 @@
         if (pscDataResponse.status !== 200) {
             let errorMessage;
             switch (pscDataResponse.status) {
-                case 404: // For PSC, 404 can mean no PSC data, which is not a critical error.
-                    let jurisdiction = companyInfo?.jurisdiction || UNKNOWN_JURISDICTION;
-                    jurisdiction = capitalizeWords(jurisdiction); // Capitalize each word in the jurisdiction
-                    companySection.innerHTML += `<br><h3>${companyNameForDisplay} is registered in ${jurisdiction}. No further PSC data is available.</h3>`;
-                    return ownershipChain;
+                case 404: errorMessage = MSG_ERROR_PSC_404; break;
                 case 0: errorMessage = MSG_ERROR_FETCH; break;
                 case 401: errorMessage = MSG_ERROR_401; break;
                 case 429: errorMessage = MSG_ERROR_429; break;
@@ -304,7 +300,7 @@
         if (!pscData || !pscData.items || pscData.items.length === 0) {
             let jurisdiction = companyInfo?.jurisdiction || UNKNOWN_JURISDICTION;
             jurisdiction = capitalizeWords(jurisdiction); // Capitalize each word in the jurisdiction
-            companySection.innerHTML += `<br><h3>${companyNameForDisplay} is registered in ${jurisdiction}. No further PSC data is available.</h3>`;
+            companySection.innerHTML += `<br><h3 class="no-further-info">${companyNameForDisplay} is registered in ${jurisdiction}. No further PSC data is available.</h3>`;
             return ownershipChain;
         }
 
@@ -332,7 +328,7 @@
                 companyNumberDisplay = `${legalAuthority.toUpperCase()}: ${rawRegistrationNumber.toUpperCase()}`;
                 console.log(`Non-UK entity detected: ${companyNumberDisplay}. Stopping recursion.`);
                 legalAuthority = capitalizeWords(legalAuthority); // Capitalize each word in the legal authority
-                foreignEntityMessage = `<br><h3>${psc.name} is registered in ${legalAuthority}. No further data is available.</h3>`;
+                foreignEntityMessage = `<br><h3 class="no-further-info">${psc.name} is registered in ${legalAuthority}. No further data is available.</h3>`;
                 viewLink = "N/A";
             } else if (registrationNumber.length !== 8 && UK_JURISDICTIONS.includes(legalAuthority)) { // Only consider invalid if it's a UK entity
                 viewLink = INVALID_CH_NUMBER_VIEW_LINK;
@@ -427,7 +423,7 @@
             },
             footer: {
                 fontSize: 10,
-                text: "Searched using CJs Pi - UBO Finder V:1.2.9",
+                text: "Searched using CJs Pi - UBO Finder V:1.3.3",
                 yPosition: doc.internal.pageSize.height - 10,
                 dateTimeWidth: 60 // Estimated width for date/time string for right alignment
             },
@@ -511,6 +507,7 @@
         document.querySelectorAll("div#results > div.company-data-section").forEach(companySection => {
             const companyName = companySection.querySelector("h3").textContent;
             const table = companySection.querySelector("table");
+			const noFurtherInfoElement = companySection.querySelector(".no-further-info");
             let bodyRows = [];
 
             // Add the company title row, styled to look like a section header
@@ -541,6 +538,14 @@
                     })
                 );
                 bodyRows = bodyRows.concat(dataRows);
+            }
+			
+            if (noFurtherInfoElement) {
+                bodyRows.push([{
+                    content: noFurtherInfoElement.textContent,
+                    colSpan: pdfConfig.columns.length,
+                    styles: { halign: 'center' }
+                }]);
             }
 
             // Draw the table for the current company. It will only contain the grey header if no table exists.
@@ -858,6 +863,38 @@
                         </tr>
 						<tr>
                             <td>1.2.9</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Re-worked export to PDF functionality.</li>
+                            </td>
+                        </tr>
+						<tr>
+                            <td>1.3.0</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Re-worked export to PDF functionality.</li>
+                            </td>
+                        </tr>
+						<tr>
+                            <td>1.3.1</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Improved error handling.</li>
+                            </td>
+                        </tr>
+						<tr>
+                            <td>1.3.2</td>
+                            <td> </td>
+                            <td>
+                                <ul>
+                                    <li>Improved error handling.</li>
+                            </td>
+                        </tr>
+						<tr>
+                            <td>1.3.3</td>
                             <td> </td>
                             <td>
                                 <ul>
